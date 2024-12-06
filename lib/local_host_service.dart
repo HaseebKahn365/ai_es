@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -56,17 +57,22 @@ class _VoiceControlAppState extends State<VoiceControlApp> {
     }
   }
 
+  // Response temp;
+
   Future<void> _sendVoiceCommand(String command) async {
     try {
       final response = await http.post(Uri.parse(serverUrl), body: {'command': command});
+      Map<String, dynamic> responseBody = json.decode(response.body);
       setState(() {
-        httpError = response.toString();
+        // incomingResult = response.headers['message'] ?? '';
+        httpError = response.statusCode.toString();
+        // incomingResult = responseBody['message'] ?? 'No message received';
       });
 
       if (response.statusCode == 200) {
         print('Command sent successfully');
         setState(() {
-          httpError = response.statusCode.toString();
+          // incomingResult = httpError = response.statusCode.toString();
         });
       } else {
         print('Failed to send command');
@@ -78,6 +84,7 @@ class _VoiceControlAppState extends State<VoiceControlApp> {
   }
 
   String httpError = '';
+  String incomingResult = '';
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -94,6 +101,7 @@ class _VoiceControlAppState extends State<VoiceControlApp> {
             ),
             const SizedBox(height: 20),
             Text(httpError),
+            Text(incomingResult),
             FloatingActionButton(
               onPressed: _listen,
               child: Icon(_isListening ? Icons.mic : Icons.mic_none),
