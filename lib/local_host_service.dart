@@ -1,111 +1,123 @@
-import 'dart:convert';
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class VoiceControlApp extends StatefulWidget {
   const VoiceControlApp({super.key});
-
   @override
-  _VoiceControlAppState createState() => _VoiceControlAppState();
+  State<VoiceControlApp> createState() => _VoiceControlAppState();
 }
 
 class _VoiceControlAppState extends State<VoiceControlApp> {
-  final stt.SpeechToText _speechToText = stt.SpeechToText();
+  final stt.SpeechToText _speech = stt.SpeechToText();
   bool _isListening = false;
-  String _lastCommand = '';
+  String _text = '';
+  String _error = '';
 
-  // Server IP and Port (replace with your computer's IP)
-  final String serverUrl = 'http://192.168.121.254:5000/voice-command';
+  final String _serverUrl = 'http://192.168.149.254:5000/voice-command';
 
-  @override
-  void initState() {
-    _speechToText.initialize(
-      onStatus: (status) => log(status),
-      onError: (err) => log(err as String),
-    );
-    super.initState();
-  }
-
-  void _listen() async {
+  Future<void> _listen() async {
     if (!_isListening) {
-      bool available = await _speechToText.initialize(
-        onStatus: (val) => print('onStatus: $val'),
-        onError: (val) => print('onError: $val'),
-      );
-
+      bool available = await _speech.initialize();
       if (available) {
         setState(() => _isListening = true);
-        _speechToText.listen(
-          onResult: (val) async {
-            String recognizedWords = val.recognizedWords;
-            setState(() {
-              _lastCommand = recognizedWords;
-            });
-
-            // Send command to server
-            await _sendVoiceCommand(recognizedWords);
-            log(recognizedWords);
-          },
+        _speech.listen(
+          onResult: (result) => setState(() => _text = result.recognizedWords),
+          cancelOnError: true,
         );
       }
     } else {
       setState(() => _isListening = false);
-      _speechToText.stop();
-    }
-  }
-
-  // Response temp;
-
-  Future<void> _sendVoiceCommand(String command) async {
-    try {
-      final response = await http.post(Uri.parse(serverUrl), body: {'command': command});
-      Map<String, dynamic> responseBody = json.decode(response.body);
-      setState(() {
-        // incomingResult = response.headers['message'] ?? '';
-        httpError = response.statusCode.toString();
-        // incomingResult = responseBody['message'] ?? 'No message received';
-      });
-
-      if (response.statusCode == 200) {
-        print('Command sent successfully');
-        setState(() {
-          // incomingResult = httpError = response.statusCode.toString();
-        });
-      } else {
-        print('Failed to send command');
+      _speech.stop();
+      // Wait a moment then send the final text
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (_text.isNotEmpty) {
+        await _sendCommand(_text);
       }
-    } catch (e) {
-      httpError = e.toString();
-      print('Error sending command: $e');
     }
   }
 
-  String httpError = '';
-  String incomingResult = '';
+  Future<void> _sendCommand(String command) async {
+    try {
+      final response = await http.post(Uri.parse(_serverUrl), body: {'command': command});
+
+      if (response.statusCode != 200) {
+        setState(() => _error = 'Error: ${response.statusCode}');
+      }
+
+      setState(() {
+        recievedResp = response.body;
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    }
+  }
+
+  String recievedResp = '';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Voice Control Home Automation'),
+        title: const Text('Voice Control'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.black,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              _lastCommand.isEmpty ? '' : _lastCommand,
-              style: const TextStyle(fontSize: 18),
+            if (_text.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  _text,
+                  style: const TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            if (_error.isNotEmpty) Text(_error, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 40),
+            GestureDetector(
+              onTap: _listen,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 500),
+                height: _isListening ? 150 : 80,
+                width: _isListening ? 150 : 80,
+                decoration: BoxDecoration(
+                  color: _isListening ? Colors.red.shade100 : Colors.blue.shade100,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: _isListening ? Colors.red.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                      spreadRadius: 10,
+                      blurRadius: 10,
+                    )
+                  ],
+                ),
+                child: Icon(
+                  _isListening ? Icons.mic : Icons.mic_none,
+                  color: _isListening ? Colors.red : Colors.blue,
+                  size: 50,
+                ),
+              ),
             ),
-            const SizedBox(height: 20),
-            Text(httpError),
-            Text(incomingResult),
-            FloatingActionButton(
-              onPressed: _listen,
-              child: Icon(_isListening ? Icons.mic : Icons.mic_none),
-            )
+            if (recievedResp.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  recievedResp,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w300,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
           ],
         ),
       ),
