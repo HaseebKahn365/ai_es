@@ -1,6 +1,12 @@
+import 'dart:convert';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
+
+FlutterTts flutterTts = FlutterTts();
 
 class VoiceControlApp extends StatefulWidget {
   const VoiceControlApp({super.key});
@@ -47,13 +53,20 @@ class _VoiceControlAppState extends State<VoiceControlApp> {
 
       setState(() {
         recievedResp = response.body;
+        // parse the body as json and then look for 'message' key
+        words = json.decode(response.body)['message'];
+        if (words.length > 100) {
+          words = words.substring(0, 100);
+        }
       });
+      await flutterTts.speak(words);
     } catch (e) {
       setState(() => _error = e.toString());
     }
   }
 
   String recievedResp = '';
+  String words = '';
 
   @override
   Widget build(BuildContext context) {
@@ -118,8 +131,70 @@ class _VoiceControlAppState extends State<VoiceControlApp> {
                   textAlign: TextAlign.center,
                 ),
               ),
+
+            //a segmented button to select voice using popup menu and say "Hello this is demo voice for selected voice"
+
+            const SegmentedControlDemo(),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class SegmentedControlDemo extends StatefulWidget {
+  const SegmentedControlDemo({super.key});
+
+  @override
+  State<StatefulWidget> createState() => _SegmentedControlDemoState();
+}
+
+class _SegmentedControlDemoState extends State<SegmentedControlDemo> {
+  final Map<int, Widget> children = const <int, Widget>{
+    0: Text('Voice 1'),
+    1: Text('Voice 2'),
+    2: Text('Voice 3'),
+  };
+
+  int _sharedValue = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: <Widget>[
+          const Text('Select Voice'),
+          CupertinoSlidingSegmentedControl<int>(
+            children: children,
+            onValueChanged: (int? newValue) {
+              // Changed to accept nullable int
+              if (newValue != null) {
+                // Add null check
+                setState(() {
+                  _sharedValue = newValue;
+                });
+              }
+            },
+            groupValue: _sharedValue,
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await flutterTts.setVoice({"name": "en-us-x-sfg#female_1-local", "locale": "en-US"});
+              Map<String, String> voice;
+              if (_sharedValue == 0) {
+                voice = {"name": "en-us-x-sfg#male_1-local", "locale": "en-US"};
+              } else if (_sharedValue == 1) {
+                voice = {"name": "en-us-x-sfg#male_2-local", "locale": "en-US"};
+              } else {
+                voice = {"name": "en-us-x-sfg#male_3-local", "locale": "en-US"};
+              }
+
+              await flutterTts.speak('Hello this is demo voice for selected voice');
+            },
+            child: const Text('Say Hello'),
+          ),
+        ],
       ),
     );
   }

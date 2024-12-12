@@ -15,6 +15,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
+        fontFamily: 'Segoe UI', // Windows system font
+        // Fallback fonts for other platforms
+        textTheme: const TextTheme(
+          bodyMedium: TextStyle(
+            fontFamily: 'Segoe UI, Arial, sans-serif',
+          ),
+        ),
       ),
       home: const VoiceControlApp(),
     );
