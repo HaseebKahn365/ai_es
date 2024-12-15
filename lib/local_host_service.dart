@@ -1,201 +1,265 @@
-import 'dart:convert';
-
-import 'package:flutter/cupertino.dart';
+import 'package:ai_es/ai_provider.dart';
+import 'package:ai_es/main.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:http/http.dart' as http;
-import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:provider/provider.dart';
 
-FlutterTts flutterTts = FlutterTts();
-
-class VoiceControlApp extends StatefulWidget {
-  const VoiceControlApp({super.key});
-  @override
-  State<VoiceControlApp> createState() => _VoiceControlAppState();
-}
-
-class _VoiceControlAppState extends State<VoiceControlApp> {
-  final stt.SpeechToText _speech = stt.SpeechToText();
-  bool _isListening = false;
-  String _text = '';
-  String _error = '';
-
-  final String _serverUrl = 'http://192.168.149.254:5000/voice-command';
-
-  Future<void> _listen() async {
-    if (!_isListening) {
-      bool available = await _speech.initialize();
-      if (available) {
-        setState(() => _isListening = true);
-        _speech.listen(
-          onResult: (result) => setState(() => _text = result.recognizedWords),
-          cancelOnError: true,
-        );
-      }
-    } else {
-      setState(() => _isListening = false);
-      _speech.stop();
-      // Wait a moment then send the final text
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (_text.isNotEmpty) {
-        await _sendCommand(_text);
-      }
-    }
-  }
-
-  Future<void> _sendCommand(String command) async {
-    try {
-      final response = await http.post(Uri.parse(_serverUrl), body: {'command': command});
-
-      if (response.statusCode != 200) {
-        setState(() => _error = 'Error: ${response.statusCode}');
-      }
-
-      setState(() {
-        recievedResp = response.body;
-        // parse the body as json and then look for 'message' key
-        words = json.decode(response.body)['message'];
-        if (words.length > 100) {
-          words = words.substring(0, 100);
-        }
-      });
-      await flutterTts.speak(words);
-    } catch (e) {
-      setState(() => _error = e.toString());
-    }
-  }
-
-  String recievedResp = '';
-  String words = '';
+class VoiceControlScreen extends StatelessWidget {
+  const VoiceControlScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Voice Control'),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (_text.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  _text,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w300,
+    return Consumer<AIAssistantProvider>(
+      builder: (context, aiProvider, _) {
+        return Scaffold(
+          body: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Stack(
+                children: [
+                  //on the left side should be the title of the app ie. Home Assistant
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
+                      child: Row(
+                        children: [
+                          const Text(
+                            'AI  Assistant',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          aiProvider.isLoading
+                              ? const SizedBox(
+                                  width: 10,
+                                  height: 10,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 1,
+                                  ),
+                                )
+                              : const SizedBox.shrink(),
+                        ],
+                      ),
+                    ),
                   ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            if (_error.isNotEmpty) Text(_error, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 40),
-            GestureDetector(
-              onTap: _listen,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                height: _isListening ? 150 : 80,
-                width: _isListening ? 150 : 80,
-                decoration: BoxDecoration(
-                  color: _isListening ? Colors.red.shade100 : Colors.blue.shade100,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: _isListening ? Colors.red.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
-                      spreadRadius: 10,
-                      blurRadius: 10,
-                    )
-                  ],
-                ),
-                child: Icon(
-                  _isListening ? Icons.mic : Icons.mic_none,
-                  color: _isListening ? Colors.red : Colors.blue,
-                  size: 50,
-                ),
+                  //button to toggle the theme
+                  const Positioned(
+                      //top center
+                      top: 0,
+                      right: 0,
+                      child: Center(child: ThemeChanger())),
+                  // Loading State
+                  // if (aiProvider.isLoading)
+                  //   Positioned(
+                  //     left: MediaQuery.of(context).size.width / 2 - 20,
+                  //     top: 0,
+                  //     child: const Center(
+                  //       child: CircularProgressIndicator(),
+                  //     ),
+                  //   ),
+
+                  // Text Display
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          width: double.infinity,
+                          child: Text(
+                            aiProvider.text.isEmpty ? '' : aiProvider.text,
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w200,
+                              letterSpacing: 1.2,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                        // create a stylish button to start listening but make sure to use animated container and gesture detector
+                        const ListeningButton(),
+                      ],
+                    ),
+                  ),
+
+                  // Error Display
+                  if (aiProvider.error.isNotEmpty)
+                    Positioned(
+                      bottom: 20, // Position at the bottom
+                      left: 20, // Add left padding
+                      right: 20, // Add right padding to constrain width
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(maxWidth: 300), // Limit width
+                        child: Text(
+                          aiProvider.error,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 16,
+                          ),
+                          textAlign: TextAlign.center,
+                          softWrap: true, // Enable text wrapping
+                          overflow: TextOverflow.visible, // Show all text
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
-            if (recievedResp.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(20),
-                child: Text(
-                  recievedResp,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w300,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-            //a segmented button to select voice using popup menu and say "Hello this is demo voice for selected voice"
-
-            const SegmentedControlDemo(),
-          ],
-        ),
-      ),
+          ),
+          // floatingActionButton: FloatingActionButton(
+          //   onPressed: () {
+          //     if (aiProvider.isListening) {
+          //       aiProvider.stopListening();
+          //     } else {
+          //       aiProvider.startListening();
+          //     }
+          //   },
+          //   child: Icon(
+          //     aiProvider.isListening ? Icons.mic : Icons.mic_none,
+          //     color: Colors.white,
+          //   ),
+          // ),
+        );
+      },
     );
   }
 }
 
-class SegmentedControlDemo extends StatefulWidget {
-  const SegmentedControlDemo({super.key});
-
-  @override
-  State<StatefulWidget> createState() => _SegmentedControlDemoState();
-}
-
-class _SegmentedControlDemoState extends State<SegmentedControlDemo> {
-  final Map<int, Widget> children = const <int, Widget>{
-    0: Text('Voice 1'),
-    1: Text('Voice 2'),
-    2: Text('Voice 3'),
-  };
-
-  int _sharedValue = 0;
+class ListeningButton extends StatelessWidget {
+  const ListeningButton({
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: <Widget>[
-          const Text('Select Voice'),
-          CupertinoSlidingSegmentedControl<int>(
-            children: children,
-            onValueChanged: (int? newValue) {
-              // Changed to accept nullable int
-              if (newValue != null) {
-                // Add null check
-                setState(() {
-                  _sharedValue = newValue;
-                });
-              }
-            },
-            groupValue: _sharedValue,
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              await flutterTts.setVoice({"name": "en-us-x-sfg#female_1-local", "locale": "en-US"});
-              Map<String, String> voice;
-              if (_sharedValue == 0) {
-                voice = {"name": "en-us-x-sfg#male_1-local", "locale": "en-US"};
-              } else if (_sharedValue == 1) {
-                voice = {"name": "en-us-x-sfg#male_2-local", "locale": "en-US"};
-              } else {
-                voice = {"name": "en-us-x-sfg#male_3-local", "locale": "en-US"};
-              }
+    return Consumer<AIAssistantProvider>(
+      builder: (context, aiProvider, child) {
+        return Column(
+          children: [
+            GestureDetector(
+              onTapDown: (_) {
+                if (aiProvider.isListening) {
+                  aiProvider.stopListening();
+                } else {
+                  aiProvider.startListening();
+                }
+              },
+              onTapUp: (_) {
+                if (aiProvider.isListening) {
+                  aiProvider.stopListening();
+                }
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                margin: aiProvider.isListening ? const EdgeInsets.all(20) : const EdgeInsets.all(12),
+                width: !aiProvider.isListening ? 250 : 150,
+                height: 150,
+                decoration: BoxDecoration(
+                  color: aiProvider.isListening ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
+                  borderRadius: !aiProvider.isListening ? BorderRadius.circular(50) : BorderRadius.circular(75),
+                  boxShadow: aiProvider.isListening
+                      ? [
+                          // Pressed effect - inner shadow only
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            offset: const Offset(2, 2),
+                            blurRadius: 4,
+                            spreadRadius: -1,
+                          ),
+                        ]
+                      : [
+                          // Outer light shadow
+                          BoxShadow(
+                            color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.3) : Colors.white,
+                            offset: const Offset(-4, -4),
+                            blurRadius: 12,
+                            spreadRadius: 1,
+                          ),
+                          // Outer dark shadow
+                          BoxShadow(
+                            color: Colors.black.withOpacity(themeProvider.isDarkMode ? 1 : 0.2),
+                            offset: const Offset(10, 10),
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                ),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        textAlign: TextAlign.center,
+                        aiProvider.isListening ? 'Listening...' : 'Start Listening',
+                        style: TextStyle(
+                          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                          fontSize: 18,
+                        ),
+                      ),
+                      if (aiProvider.isListening)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Icon(
+                            Icons.mic,
+                            color: themeProvider.isDarkMode ? Colors.black : Colors.white,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
 
-              await flutterTts.speak('Hello this is demo voice for selected voice');
-            },
-            child: const Text('Say Hello'),
-          ),
-        ],
-      ),
+class ThemeChanger extends StatelessWidget {
+  const ThemeChanger({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, child) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return RotationTransition(
+                  turns: animation,
+                  child: ScaleTransition(
+                    scale: animation,
+                    child: child,
+                  ),
+                );
+              },
+              child: Icon(
+                themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                key: ValueKey(themeProvider.isDarkMode),
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Switch.adaptive(
+              value: themeProvider.isDarkMode,
+              onChanged: (_) => themeProvider.toggleTheme(),
+              activeColor: Theme.of(context).colorScheme.primary,
+              activeTrackColor: Theme.of(context).colorScheme.primaryContainer,
+              inactiveThumbColor: Theme.of(context).colorScheme.surface,
+              inactiveTrackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            ),
+          ],
+        );
+      },
     );
   }
 }

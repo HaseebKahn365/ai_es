@@ -1,8 +1,20 @@
+import 'package:ai_es/ai_provider.dart';
 import 'package:ai_es/local_host_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+final themeProvider = ThemeProvider();
 
 void main() {
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => aiProvider),
+        ChangeNotifierProvider(create: (_) => themeProvider),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -10,52 +22,53 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Initialize speech recognition
+    context.read<AIAssistantProvider>().initializeSpeech();
+
+    // Watch theme changes
+    final themeProvider = context.watch<ThemeProvider>();
+
     return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-        fontFamily: 'Segoe UI', // Windows system font
-        // Fallback fonts for other platforms
-        textTheme: const TextTheme(
-          bodyMedium: TextStyle(
-            fontFamily: 'Segoe UI, Arial, sans-serif',
-          ),
-        ),
-      ),
-      home: const VoiceControlApp(),
+      title: 'Ai Assistant',
+      theme: themeProvider.themeData,
+      debugShowCheckedModeBanner: false,
+      home: const VoiceControlScreen(),
     );
   }
 }
 
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key, required this.title});
+//lets create a theme provider here for selecting the color scheme and dark mode
 
-//   final String title;
+// theme_provider.dart
 
-//   @override
-//   State<MyHomePage> createState() => _MyHomePageState();
-// }
+class ThemeProvider extends ChangeNotifier {
+  bool isDarkMode = false;
+  Color primaryColor = Colors.deepPurple;
 
-// class _MyHomePageState extends State<MyHomePage> {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-//         title: Text(widget.title),
-//       ),
-//       body: Center(
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           children: <Widget>[
-//             Text(
-//               'AI based embedded system',
-//               style: Theme.of(context).textTheme.headlineMedium,
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
+  ThemeData get themeData {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: primaryColor,
+        brightness: isDarkMode ? Brightness.dark : Brightness.light,
+      ),
+      fontFamily: 'Segoe UI',
+      textTheme: const TextTheme(
+        bodyMedium: TextStyle(
+          fontFamily: 'Segoe UI, Arial, sans-serif',
+        ),
+      ),
+    );
+  }
+
+  void toggleTheme() {
+    isDarkMode = !isDarkMode;
+    notifyListeners();
+  }
+
+  void updatePrimaryColor(Color color) {
+    primaryColor = color;
+    notifyListeners();
+  }
+}
