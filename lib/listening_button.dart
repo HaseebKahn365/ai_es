@@ -56,6 +56,7 @@ class _ListeningButtonState extends State<ListeningButton> with TickerProviderSt
             AnimatedBuilder(
               animation: aiProvider.isListening ? _pulseController : _breathingController,
               builder: (context, child) {
+                bool isListening = aiProvider.isListening;
                 return Transform.scale(
                   scale: aiProvider.isListening ? _pulseAnimation.value : _breathingAnimation.value,
                   child: GestureDetector(
@@ -78,9 +79,9 @@ class _ListeningButtonState extends State<ListeningButton> with TickerProviderSt
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                            Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                            Theme.of(context).colorScheme.primary.withOpacity(1.0),
+                            isListening ? Theme.of(context).colorScheme.error.withOpacity(0.5) : Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                            isListening ? Theme.of(context).colorScheme.error.withOpacity(0.8) : Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                            isListening ? Theme.of(context).colorScheme.error.withOpacity(1.0) : Theme.of(context).colorScheme.primary.withOpacity(1.0),
                           ],
                           stops: const [0.0, 0.5, 1.0],
                         ),

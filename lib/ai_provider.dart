@@ -14,7 +14,18 @@ class AIAssistantProvider extends ChangeNotifier {
   String error = '';
   bool isLoading = false;
 
-  final String _serverUrl = 'http://192.168.149.254:5000/voice-command';
+  String voiceEndPoint = 'http://192.168.149.254:5000/voice-command';
+  String commandEndPoint = 'http://192.168.149.254:5000/command';
+
+  void setVoiceEndPoint(String endPoint) {
+    voiceEndPoint = endPoint;
+    notifyListeners();
+  }
+
+  void setCommandEndPoint(String endPoint) {
+    commandEndPoint = endPoint;
+    notifyListeners();
+  }
 
   // Initialize speech recognition
   Future<void> initializeSpeech() async {
@@ -110,7 +121,7 @@ class AIAssistantProvider extends ChangeNotifier {
       error = '';
       notifyListeners();
 
-      final response = await http.post(Uri.parse(_serverUrl), body: {'command': command});
+      final response = await http.post(Uri.parse(voiceEndPoint), body: {'command': command});
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);

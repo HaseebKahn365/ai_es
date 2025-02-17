@@ -1,6 +1,7 @@
 import 'package:ai_es/ai_provider.dart';
 import 'package:ai_es/listening_button.dart';
 import 'package:ai_es/main.dart';
+import 'package:ai_es/settings_scree.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -65,8 +66,24 @@ class VoiceControlScreen extends StatelessWidget {
                   // Text Display
                   Center(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
+                        const SizedBox(height: 100),
+                        //settings icon outline button
+                        OutlinedButton.icon(
+                          onPressed: () {
+                            // Navigate to settings screen using material route to SettingsScreen()
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (context) => const SettingsScreen(),
+                            ));
+                          },
+                          style: OutlinedButton.styleFrom(
+                            shape: const StadiumBorder(),
+                          ),
+                          icon: const Icon(Icons.settings),
+                          label: const Text('Settings'),
+                        ),
+                        const SizedBox(height: 100),
                         Container(
                           padding: const EdgeInsets.all(16),
                           width: double.infinity,
