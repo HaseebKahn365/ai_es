@@ -6,11 +6,13 @@ import 'package:provider/provider.dart';
 final themeProvider = ThemeProvider();
 
 void main() {
+  // Add this line to initialize Flutter bindings
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => aiProvider),
-        ChangeNotifierProvider(create: (_) => themeProvider),
+        ChangeNotifierProvider.value(value: themeProvider),
       ],
       child: const MyApp(),
     ),

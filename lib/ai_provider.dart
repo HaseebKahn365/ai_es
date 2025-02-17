@@ -38,7 +38,7 @@ class AIAssistantProvider extends ChangeNotifier {
   String error = '';
   bool isLoading = false;
 
-  String voiceEndPoint = 'http://192.168.149.254:5000/voice-command';
+  String voiceEndPoint = 'http://192.168.239.254:5000/voice-command';
   String commandEndPoint = 'http://192.168.149.254:5000/command';
 
   Map<String, dynamic> deviceStates = {
@@ -53,7 +53,62 @@ class AIAssistantProvider extends ChangeNotifier {
     'Servo motor': {'direction': 'none', 'degrees': 0},
   };
 
-  //
+//Todo: a method to handle the json to update the states from Respoinse body is: {device_states: {DC motor: on, Refrigerator: on, Servo motor: {degrees: 0, direction: none}, TV: on, kitchen light: on, room 1 light: on, room 2 light: {intensity: 100, state: on}, room 3 light: {intensity: 100, state: on}, room 4 light: on}, message: Whoa, the house is now fully alive! Everything is turned on. Enjoy the excitement!, status: success}
+
+  void updateStates(Map<String, dynamic> responseBody) {
+    log('Updating the entire json from the response body');
+    deviceStates = responseBody['device_states'];
+    log(deviceStates.toString());
+
+    notifyListeners();
+  }
+
+  void resetStates() {
+    deviceStates = {
+      'room 1 light': 'off',
+      'room 2 light': {'state': 'off', 'intensity': 0},
+      'room 3 light': {'state': 'off', 'intensity': 0},
+      'room 4 light': 'off',
+      'kitchen light': 'off',
+      'TV': 'off',
+      'Refrigerator': 'off',
+      'DC motor': 'off',
+      'Servo motor': {'direction': 'none', 'degrees': 0},
+    };
+    notifyListeners();
+  }
+
+//!following are bool type devices
+
+  void changeRoom1(bool change) {
+    deviceStates['room 1 light'] = change;
+    notifyListeners();
+  }
+
+  void changeRoom4(bool change) {
+    deviceStates['room 4 light'] = change;
+    notifyListeners();
+  }
+
+  void changeKitchen(bool change) {
+    deviceStates['kitchen light'] = change;
+    notifyListeners();
+  }
+
+  void changeTV(bool change) {
+    deviceStates['TV'] = change;
+    notifyListeners();
+  }
+
+  void changeRefrigerator(bool change) {
+    deviceStates['Refrigerator'] = change;
+    notifyListeners();
+  }
+
+  void changeDCMotor(bool change) {
+    deviceStates['DC motor'] = change;
+    notifyListeners();
+  }
 
   void setVoiceEndPoint(String endPoint) {
     voiceEndPoint = endPoint;
@@ -62,6 +117,18 @@ class AIAssistantProvider extends ChangeNotifier {
 
   void setCommandEndPoint(String endPoint) {
     commandEndPoint = endPoint;
+    notifyListeners();
+  }
+
+//!following are int type devices
+
+  void changeRoom2Intensity(int intensity) {
+    deviceStates['room 2 light']['intensity'] = intensity;
+    notifyListeners();
+  }
+
+  void changeRoom3Intensity(int intensity) {
+    deviceStates['room 3 light']['intensity'] = intensity;
     notifyListeners();
   }
 
@@ -164,6 +231,8 @@ class AIAssistantProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final responseBody = json.decode(response.body);
+        aiProvider.updateStates(responseBody);
+        log('Respoinse body is: $responseBody');
         text = responseBody['message'] ?? 'No message received';
         await _tts.speak(text);
       } else {
