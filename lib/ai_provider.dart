@@ -182,6 +182,8 @@ class AIAssistantProvider extends ChangeNotifier {
     }
   }
 
+  //send state to new endpoint ie. commandEndPoint
+
   // Send voice command to server
 
 /*

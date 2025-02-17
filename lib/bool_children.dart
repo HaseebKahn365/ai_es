@@ -37,7 +37,7 @@ const Map<String, String> deviceNames = {
   "kitchen light": "Kitchen",
   "TV": "TV",
   "Refrigerator": "Refrigerator",
-  "DC motor": "Fan",
+  "DC motor": "DC Motor",
   "room 2 light": "Room 2",
   "room 3 light": "Room 3",
   "Servo motor": "Servo",
@@ -93,27 +93,34 @@ class BoolChild extends StatelessWidget {
     final bool isOn = _determineDeviceState(deviceState);
     log('$device state: $isOn');
 
-    return Card(
-      elevation: 0,
-      color: isOn ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7) : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), width: isOn ? 1 : 0)),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            _getIconForDevice(device),
-            size: 40,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            deviceNames[device] ?? device,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
+    return GestureDetector(
+      onTap: () {
+        // Use global aiProvider directly
+        log('Toggling $device');
+        aiProvider.changeRoom1(!isOn);
+      },
+      child: Card(
+        elevation: 0,
+        color: isOn ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7) : null,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), width: isOn ? 1 : 0)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _getIconForDevice(device),
+              size: 40,
+              color: Theme.of(context).colorScheme.primary,
             ),
-          ),
-        ],
+            const SizedBox(height: 10),
+            Text(
+              deviceNames[device] ?? device,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

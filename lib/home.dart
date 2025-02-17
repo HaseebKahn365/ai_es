@@ -128,9 +128,10 @@ class VoiceControlScreen extends StatelessWidget {
                         width: double.infinity,
                         child: Text(
                           aiProvider.text.isEmpty ? '' : aiProvider.text,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w200,
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                            fontWeight: FontWeight.w500,
                             letterSpacing: 1.2,
                           ),
                           textAlign: TextAlign.center,
