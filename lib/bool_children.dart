@@ -28,12 +28,33 @@ import 'dart:developer';
 
 import 'package:ai_es/ai_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+// Define global deviceNames
+const Map<String, String> deviceNames = {
+  "room 1 light": "Room 1",
+  "room 4 light": "Room 4",
+  "kitchen light": "Kitchen",
+  "TV": "TV",
+  "Refrigerator": "Refrigerator",
+  "DC motor": "Fan",
+  "room 2 light": "Room 2",
+  "room 3 light": "Room 3",
+  "Servo motor": "Servo",
+};
 
 class BoolChildren extends StatelessWidget {
   const BoolChildren({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // This line ensures the widget rebuilds when notifyListeners is called
+    // but we still use the global aiProvider for data access
+    context.watch<AIAssistantProvider>();
+
+    final devices = deviceNames.keys.toList();
+    log('Rebuilding BoolChildren with devices: ${devices.toString()}');
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -43,11 +64,12 @@ class BoolChildren extends StatelessWidget {
         crossAxisSpacing: 12,
         childAspectRatio: 1.2, // Adjust to balance size
       ),
-      itemCount: 6,
+      itemCount: devices.length > 6 ? 6 : devices.length,
       itemBuilder: (context, index) {
-        final devices = deviceNames.keys.toList();
-        log(devices.toString());
-        return BoolChild(device: devices[index]);
+        if (index < devices.length) {
+          return BoolChild(device: devices[index]);
+        }
+        return const SizedBox.shrink();
       },
     );
   }
@@ -59,39 +81,27 @@ class BoolChild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Get the device state
+    // This line ensures the widget rebuilds when notifyListeners is called
+    // but we still use the global aiProvider for data access
+    context.watch<AIAssistantProvider>();
+
+    // Get the device state from global aiProvider
     final deviceState = aiProvider.deviceStates[device];
     log('Device state: $deviceState for device $device');
 
     // Determine if the device is on
-    final bool isOn;
-    if (deviceState is String) {
-      isOn = deviceState == 'on';
-    } else if (deviceState is Map<String, dynamic>) {
-      isOn = deviceState['state'] == 'on';
-    } else {
-      isOn = false; // Default to false if the state is neither a string nor a map
-    }
-    log('$device state : $isOn');
+    final bool isOn = _determineDeviceState(deviceState);
+    log('$device state: $isOn');
+
     return Card(
       elevation: 0,
       color: isOn ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7) : null,
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-          //use a thin outline in case if it is on. also use primary color if on
-          side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), width: isOn ? 1 : 0)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15), side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), width: isOn ? 1 : 0)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            device == "TV"
-                ? Icons.connected_tv
-                : device == "Refrigerator"
-                    ? Icons.kitchen
-                    : device == "DC motor"
-                        //fan
-                        ? Icons.wind_power_rounded
-                        : Icons.lightbulb,
+            _getIconForDevice(device),
             size: 40,
             color: Theme.of(context).colorScheme.primary,
           ),
@@ -107,35 +117,48 @@ class BoolChild extends StatelessWidget {
       ),
     );
   }
+
+  bool _determineDeviceState(dynamic state) {
+    if (state == null) return false;
+
+    if (state is String) {
+      return state.toLowerCase() == 'on';
+    } else if (state is Map) {
+      try {
+        // Try to safely access the state value, handling different map structures
+        final dynamic stateValue = state['state'];
+        if (stateValue is String) {
+          return stateValue.toLowerCase() == 'on';
+        }
+      } catch (e) {
+        log('Error determining device state: $e');
+      }
+    }
+    return false;
+  }
+
+  IconData _getIconForDevice(String device) {
+    if (device == "TV") return Icons.connected_tv;
+    if (device == "Refrigerator") return Icons.kitchen;
+    if (device == "DC motor") return Icons.wind_power_rounded;
+    if (device == "Servo motor") return Icons.rotate_right;
+    return Icons.lightbulb; // Default for lights
+  }
 }
-
-//user friendly names for the devices
-const Map<String, String> deviceNames = {
-  "room 1 light": "Room 1",
-  "room 4 light": "Room 4",
-  "kitchen light": "Kitchen",
-  "TV": "TV",
-  "Refrigerator": "Refrigerator",
-  "DC motor": "Fan",
-
-  // devices with intensity control
-  "room 2 light": "Room 2",
-  "room 3 light": "Room 3",
-  "Servo motor": "Servo",
-};
-
-//lets create devices with intensity control using slider for room2 and room3 light and servo motor
 
 class SliderChildren extends StatelessWidget {
   const SliderChildren({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // This line ensures the widget rebuilds when notifyListeners is called
+    context.watch<AIAssistantProvider>();
+
     return const Column(
       children: [
-        SliderChild(device: "room 2 Light"),
+        SliderChild(device: "room 2 light"),
         SizedBox(height: 5),
-        SliderChild(device: "room 3 Light"),
+        SliderChild(device: "room 3 light"),
         SizedBox(height: 5),
         SliderChild(device: "Servo motor"),
       ],
@@ -149,65 +172,126 @@ class SliderChild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // This line ensures the widget rebuilds when notifyListeners is called
+    context.watch<AIAssistantProvider>();
+
+    // Get state from global aiProvider
+    final deviceState = aiProvider.deviceStates[device];
+
+    // Determine intensity or degrees based on device type
+    final double sliderValue = _getSliderValue(deviceState);
+    final bool isOn = _isDeviceOn(deviceState);
+
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      child:
-          //dont display anyting for servo
-          (device == 'Servo motor')
-              ? const SizedBox.shrink()
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      device == "Servo motor" ? Icons.rotate_right : Icons.lightbulb,
-                      size: 20,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      deviceNames[device] ?? device,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    if (device == "Servo motor")
-                      Row(
-                        children: [
-                          const Text(
-                            ": 0°",
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey,
-                            ),
+      child: device == 'Servo motor' && !isOn
+          ? const SizedBox.shrink()
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  device == "Servo motor" ? Icons.rotate_right : Icons.lightbulb,
+                  size: 20,
+                  color: isOn ? Theme.of(context).colorScheme.primary : Colors.grey,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  deviceNames[device] ?? device,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isOn ? Theme.of(context).colorScheme.onSurface : Colors.grey,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                if (device == "Servo motor")
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Text(
+                          ": ${sliderValue.toInt()}°",
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: isOn ? Theme.of(context).colorScheme.onSurface : Colors.grey,
                           ),
-                          Slider(
-                            value: 0,
-                            onChanged: (value) {},
-                            onChangeEnd: (value) => print(value),
+                        ),
+                        Expanded(
+                          child: Slider(
+                            value: sliderValue,
+                            onChanged: isOn
+                                ? (value) {
+                                    // Use global aiProvider directly
+                                    // aiProvider.updateDeviceAngle(device, value.toInt());
+                                  }
+                                : null,
                             min: 0,
                             max: 180,
                             activeColor: Theme.of(context).colorScheme.primary,
                             inactiveColor: Colors.grey[300],
                           ),
-                        ],
-                      )
-                    else
-                      Slider(
-                        value: 0,
-                        onChanged: (value) {},
-                        min: 0,
-                        max: 100,
-                        activeColor: Theme.of(context).colorScheme.primary,
-                        inactiveColor: Colors.grey[300],
-                      ),
-                  ],
-                ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  Expanded(
+                    child: Slider(
+                      value: sliderValue,
+                      onChanged: isOn
+                          ? (value) {
+                              // Use global aiProvider directly
+                              // aiProvider.updateDeviceIntensity(device, value.toInt());
+                            }
+                          : null,
+                      min: 0,
+                      max: 100,
+                      activeColor: Theme.of(context).colorScheme.primary,
+                      inactiveColor: Colors.grey[300],
+                    ),
+                  ),
+              ],
+            ),
     );
+  }
+
+  double _getSliderValue(dynamic state) {
+    if (state == null) return 0;
+
+    try {
+      if (state is Map) {
+        if (device == "Servo motor" && state.containsKey('degrees')) {
+          final degrees = state['degrees'];
+          return degrees is int ? degrees.toDouble() : 0.0;
+        } else if (state.containsKey('intensity')) {
+          final intensity = state['intensity'];
+          return intensity is int ? intensity.toDouble() : 0.0;
+        }
+      }
+    } catch (e) {
+      log('Error getting slider value: $e');
+    }
+    return 0;
+  }
+
+  bool _isDeviceOn(dynamic state) {
+    if (state == null) return false;
+
+    if (state is String) {
+      return state.toLowerCase() == 'on';
+    } else if (state is Map) {
+      try {
+        final dynamic stateValue = state['state'];
+        if (stateValue is String) {
+          return stateValue.toLowerCase() == 'on';
+        }
+      } catch (e) {
+        log('Error determining device state: $e');
+      }
+    }
+    return false;
   }
 }

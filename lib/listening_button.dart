@@ -1,5 +1,6 @@
 import 'package:ai_es/ai_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class ListeningButton extends StatefulWidget {
   const ListeningButton({super.key});
@@ -48,6 +49,9 @@ class _ListeningButtonState extends State<ListeningButton> with TickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    // Access the global instance of aiProvider
+    final aiProvider = context.watch<AIAssistantProvider>();
+
     return Column(
       children: [
         Stack(
@@ -123,7 +127,7 @@ class _ListeningButtonState extends State<ListeningButton> with TickerProviderSt
                 );
               },
             ),
-            //on top shoudl be the label so that it doesnt animate. listening or start listening
+            // On top should be the label so that it doesn't animate
             Positioned.fill(
               child: Center(
                 child: Text(

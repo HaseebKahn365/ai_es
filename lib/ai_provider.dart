@@ -53,8 +53,6 @@ class AIAssistantProvider extends ChangeNotifier {
     'Servo motor': {'direction': 'none', 'degrees': 0},
   };
 
-//Todo: a method to handle the json to update the states from Respoinse body is: {device_states: {DC motor: on, Refrigerator: on, Servo motor: {degrees: 0, direction: none}, TV: on, kitchen light: on, room 1 light: on, room 2 light: {intensity: 100, state: on}, room 3 light: {intensity: 100, state: on}, room 4 light: on}, message: Whoa, the house is now fully alive! Everything is turned on. Enjoy the excitement!, status: success}
-
   void updateStates(Map<String, dynamic> responseBody) {
     log('Updating the entire json from the response body');
     deviceStates = responseBody['device_states'];
