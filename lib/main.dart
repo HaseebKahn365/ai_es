@@ -43,7 +43,7 @@ class MyApp extends StatelessWidget {
 
 class ThemeProvider extends ChangeNotifier {
   bool isDarkMode = false;
-  Color primaryColor = Colors.deepPurple;
+  Color primaryColor = Colors.blue;
 
   ThemeData get themeData {
     return ThemeData(
@@ -52,12 +52,6 @@ class ThemeProvider extends ChangeNotifier {
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         brightness: isDarkMode ? Brightness.dark : Brightness.light,
-      ),
-      fontFamily: 'Segoe UI',
-      textTheme: const TextTheme(
-        bodyMedium: TextStyle(
-          fontFamily: 'Segoe UI, Arial, sans-serif',
-        ),
       ),
     );
   }

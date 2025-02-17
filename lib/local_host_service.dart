@@ -1,4 +1,5 @@
 import 'package:ai_es/ai_provider.dart';
+import 'package:ai_es/listening_button.dart';
 import 'package:ai_es/main.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +26,7 @@ class VoiceControlScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           const Text(
-                            'AI  Assistant',
+                            'Smart Home',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w500,
@@ -129,97 +130,6 @@ class VoiceControlScreen extends StatelessWidget {
   }
 }
 
-class ListeningButton extends StatelessWidget {
-  const ListeningButton({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<AIAssistantProvider>(
-      builder: (context, aiProvider, child) {
-        return Column(
-          children: [
-            GestureDetector(
-              onTapDown: (_) {
-                if (aiProvider.isListening) {
-                  aiProvider.stopListening();
-                } else {
-                  aiProvider.startListening();
-                }
-              },
-              onTapUp: (_) {
-                if (aiProvider.isListening) {
-                  aiProvider.stopListening();
-                }
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                margin: aiProvider.isListening ? const EdgeInsets.all(20) : const EdgeInsets.all(12),
-                width: !aiProvider.isListening ? 250 : 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  color: aiProvider.isListening ? Theme.of(context).colorScheme.tertiary : Theme.of(context).colorScheme.primary,
-                  borderRadius: !aiProvider.isListening ? BorderRadius.circular(50) : BorderRadius.circular(75),
-                  boxShadow: aiProvider.isListening
-                      ? [
-                          // Pressed effect - inner shadow only
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            offset: const Offset(2, 2),
-                            blurRadius: 4,
-                            spreadRadius: -1,
-                          ),
-                        ]
-                      : [
-                          // Outer light shadow
-                          BoxShadow(
-                            color: themeProvider.isDarkMode ? Colors.white.withOpacity(0.3) : Colors.white,
-                            offset: const Offset(-4, -4),
-                            blurRadius: 12,
-                            spreadRadius: 1,
-                          ),
-                          // Outer dark shadow
-                          BoxShadow(
-                            color: Colors.black.withOpacity(themeProvider.isDarkMode ? 1 : 0.2),
-                            offset: const Offset(10, 10),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                ),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        textAlign: TextAlign.center,
-                        aiProvider.isListening ? 'Listening...' : 'Start Listening',
-                        style: TextStyle(
-                          color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-                          fontSize: 18,
-                        ),
-                      ),
-                      if (aiProvider.isListening)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Icon(
-                            Icons.mic,
-                            color: themeProvider.isDarkMode ? Colors.black : Colors.white,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
 class ThemeChanger extends StatelessWidget {
   const ThemeChanger({super.key});
 
@@ -227,37 +137,27 @@ class ThemeChanger extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                return RotationTransition(
-                  turns: animation,
-                  child: ScaleTransition(
-                    scale: animation,
-                    child: child,
-                  ),
+        return Switch.adaptive(
+          value: themeProvider.isDarkMode,
+          onChanged: (_) => themeProvider.toggleTheme(),
+          activeColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          activeTrackColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+          inactiveThumbColor: Theme.of(context).colorScheme.surface,
+          inactiveTrackColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+          thumbIcon: WidgetStateProperty.resolveWith<Icon?>(
+            (states) {
+              if (states.contains(WidgetState.selected)) {
+                return Icon(
+                  Icons.dark_mode,
+                  color: Theme.of(context).colorScheme.secondary,
                 );
-              },
-              child: Icon(
-                themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
-                key: ValueKey(themeProvider.isDarkMode),
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Switch.adaptive(
-              value: themeProvider.isDarkMode,
-              onChanged: (_) => themeProvider.toggleTheme(),
-              activeColor: Theme.of(context).colorScheme.primary,
-              activeTrackColor: Theme.of(context).colorScheme.primaryContainer,
-              inactiveThumbColor: Theme.of(context).colorScheme.surface,
-              inactiveTrackColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-          ],
+              }
+              return Icon(
+                Icons.light_mode,
+                color: Theme.of(context).colorScheme.secondary,
+              );
+            },
+          ),
         );
       },
     );
