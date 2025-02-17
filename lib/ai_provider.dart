@@ -6,6 +6,30 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:http/http.dart' as http;
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
+/*
+
+self.device_states = {
+            # Lights with ON/OFF and Intensity Control
+            "room 1 light": "off",
+            "room 2 light": {"state": "off", "intensity": 0},  # Intensity control (0-100%)
+            "room 3 light": {"state": "off", "intensity": 0},  # Intensity control (0-100%)
+            "room 4 light": "off",
+            "kitchen light": "off",
+            
+            # TV and Refrigerator (ON/OFF)
+            "TV": "off",
+            "Refrigerator": "off",
+
+            # DC Motor (ON/OFF)
+            "DC motor": "off",
+
+            # Servo Motor (Clockwise/Anticlockwise in degrees)
+            "Servo motor": {"direction": "none", "degrees": 0}
+        }
+ */
+
+//in the above configs only Room1, room4, kitchen light, TV, Refrigerator, DC motor are on/off switches are of bool type
+
 class AIAssistantProvider extends ChangeNotifier {
   final stt.SpeechToText _speech = stt.SpeechToText();
   final FlutterTts _tts = FlutterTts();
@@ -16,6 +40,20 @@ class AIAssistantProvider extends ChangeNotifier {
 
   String voiceEndPoint = 'http://192.168.149.254:5000/voice-command';
   String commandEndPoint = 'http://192.168.149.254:5000/command';
+
+  Map<String, dynamic> deviceStates = {
+    'room 1 light': 'off',
+    'room 2 light': {'state': 'off', 'intensity': 0},
+    'room 3 light': {'state': 'off', 'intensity': 0},
+    'room 4 light': 'off',
+    'kitchen light': 'off',
+    'TV': 'off',
+    'Refrigerator': 'off',
+    'DC motor': 'off',
+    'Servo motor': {'direction': 'none', 'degrees': 0},
+  };
+
+  //
 
   void setVoiceEndPoint(String endPoint) {
     voiceEndPoint = endPoint;

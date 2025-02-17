@@ -1,4 +1,5 @@
 import 'package:ai_es/ai_provider.dart';
+import 'package:ai_es/bool_children.dart';
 import 'package:ai_es/listening_button.dart';
 import 'package:ai_es/main.dart';
 import 'package:ai_es/settings_scree.dart';
@@ -25,12 +26,28 @@ class VoiceControlScreen extends StatelessWidget {
                     child: Padding(
                       padding: const EdgeInsets.only(top: 8.0),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'Smart Home',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w500,
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              alignment: Alignment.centerLeft,
+                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const SettingsScreen(),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Smart Home',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -68,22 +85,45 @@ class VoiceControlScreen extends StatelessWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 100),
-                        //settings icon outline button
-                        OutlinedButton.icon(
-                          onPressed: () {
-                            // Navigate to settings screen using material route to SettingsScreen()
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => const SettingsScreen(),
-                            ));
-                          },
-                          style: OutlinedButton.styleFrom(
-                            shape: const StadiumBorder(),
+                        const SizedBox(height: 70),
+                        //a minimalist text field for sending the command directly
+
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Type command ...',
+                            hintStyle: TextStyle(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                            ),
+                            filled: true,
+                            fillColor: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide.none,
+                            ),
                           ),
-                          icon: const Icon(Icons.settings),
-                          label: const Text('Settings'),
+                          onSubmitted: (value) {
+                            aiProvider.sendVoiceCommand(value);
+                          },
                         ),
-                        const SizedBox(height: 100),
+                        const SizedBox(height: 20),
+                        //settings icon outline button
+
+                        // a sized box containing a all the button cards with bool states
+                        const SizedBox(
+                          // height: 300,
+                          // color: Colors.green.withOpacity(0.1),
+                          child: BoolChildren(),
+                        ),
+                        const SizedBox(height: 20),
+
+                        //sliders for the servo motor, room2 light, room3 light
+                        // const SizedBox(height: 20),
+                        const SliderChildren(),
+                        // const SizedBox(height: 100),
                         Container(
                           padding: const EdgeInsets.all(16),
                           width: double.infinity,
@@ -97,7 +137,6 @@ class VoiceControlScreen extends StatelessWidget {
                             textAlign: TextAlign.center,
                           ),
                         ),
-                        // create a stylish button to start listening but make sure to use animated container and gesture detector
                         const ListeningButton(),
                       ],
                     ),
@@ -109,18 +148,27 @@ class VoiceControlScreen extends StatelessWidget {
                       bottom: 20, // Position at the bottom
                       left: 20, // Add left padding
                       right: 20, // Add right padding to constrain width
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(maxWidth: 300), // Limit width
-                        child: Text(
-                          aiProvider.error,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 16,
+                      child: Dismissible(
+                        key: Key(aiProvider.error), // Unique key for dismissible
+                        direction: DismissDirection.up, // Swipe up to dismiss
+                        onDismissed: (direction) {},
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          constraints: const BoxConstraints(maxWidth: 300), // Limit width
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.error.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          textAlign: TextAlign.center,
-                          softWrap: true, // Enable text wrapping
-                          overflow: TextOverflow.visible, // Show all text
+                          child: Text(
+                            aiProvider.error,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontSize: 16,
+                            ),
+                            textAlign: TextAlign.center,
+                            softWrap: true, // Enable text wrapping
+                            overflow: TextOverflow.visible, // Show all text
+                          ),
                         ),
                       ),
                     ),
