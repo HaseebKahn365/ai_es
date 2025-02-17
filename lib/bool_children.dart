@@ -24,6 +24,9 @@ self.device_states = {
 
 //we need to create stunning looking cards for each of the above devices with icon and a lable
 
+import 'dart:developer';
+
+import 'package:ai_es/ai_provider.dart';
 import 'package:flutter/material.dart';
 
 class BoolChildren extends StatelessWidget {
@@ -43,6 +46,7 @@ class BoolChildren extends StatelessWidget {
       itemCount: 6,
       itemBuilder: (context, index) {
         final devices = deviceNames.keys.toList();
+        log(devices.toString());
         return BoolChild(device: devices[index]);
       },
     );
@@ -55,16 +59,39 @@ class BoolChild extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get the device state
+    final deviceState = aiProvider.deviceStates[device];
+    log('Device state: $deviceState for device $device');
+
+    // Determine if the device is on
+    final bool isOn;
+    if (deviceState is String) {
+      isOn = deviceState == 'on';
+    } else if (deviceState is Map<String, dynamic>) {
+      isOn = deviceState['state'] == 'on';
+    } else {
+      isOn = false; // Default to false if the state is neither a string nor a map
+    }
+    log('$device state : $isOn');
     return Card(
-      elevation: 4,
+      elevation: 0,
+      color: isOn ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7) : null,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
+          borderRadius: BorderRadius.circular(15),
+          //use a thin outline in case if it is on. also use primary color if on
+          side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), width: isOn ? 1 : 0)),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.lightbulb,
+            device == "TV"
+                ? Icons.connected_tv
+                : device == "Refrigerator"
+                    ? Icons.kitchen
+                    : device == "DC motor"
+                        //fan
+                        ? Icons.wind_power_rounded
+                        : Icons.lightbulb,
             size: 40,
             color: Theme.of(context).colorScheme.primary,
           ),
@@ -84,16 +111,16 @@ class BoolChild extends StatelessWidget {
 
 //user friendly names for the devices
 const Map<String, String> deviceNames = {
-  "room 1 Light": "Room 1",
-  "room 4 Light": "Room 4",
-  "kitchen Light": "Kitchen",
+  "room 1 light": "Room 1",
+  "room 4 light": "Room 4",
+  "kitchen light": "Kitchen",
   "TV": "TV",
   "Refrigerator": "Refrigerator",
-  "DC motor": "DC Motor",
+  "DC motor": "Fan",
 
   // devices with intensity control
-  "room 2 Light": "Room 2",
-  "room 3 Light": "Room 3",
+  "room 2 light": "Room 2",
+  "room 3 light": "Room 3",
   "Servo motor": "Servo",
 };
 
@@ -123,59 +150,64 @@ class SliderChild extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 2,
+      elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            device == "Servo motor" ? Icons.rotate_right : Icons.lightbulb,
-            size: 20,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            deviceNames[device] ?? device,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 10),
-          if (device == "Servo motor")
-            Row(
-              children: [
-                const Text(
-                  ": 0°",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
-                  ),
+      child:
+          //dont display anyting for servo
+          (device == 'Servo motor')
+              ? const SizedBox.shrink()
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      device == "Servo motor" ? Icons.rotate_right : Icons.lightbulb,
+                      size: 20,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      deviceNames[device] ?? device,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    if (device == "Servo motor")
+                      Row(
+                        children: [
+                          const Text(
+                            ": 0°",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          Slider(
+                            value: 0,
+                            onChanged: (value) {},
+                            onChangeEnd: (value) => print(value),
+                            min: 0,
+                            max: 180,
+                            activeColor: Theme.of(context).colorScheme.primary,
+                            inactiveColor: Colors.grey[300],
+                          ),
+                        ],
+                      )
+                    else
+                      Slider(
+                        value: 0,
+                        onChanged: (value) {},
+                        min: 0,
+                        max: 100,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        inactiveColor: Colors.grey[300],
+                      ),
+                  ],
                 ),
-                Slider(
-                  value: 0,
-                  onChanged: (value) {},
-                  min: 0,
-                  max: 180,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  inactiveColor: Colors.grey[300],
-                ),
-              ],
-            )
-          else
-            Slider(
-              value: 0,
-              onChanged: (value) {},
-              min: 0,
-              max: 100,
-              activeColor: Theme.of(context).colorScheme.primary,
-              inactiveColor: Colors.grey[300],
-            ),
-        ],
-      ),
     );
   }
 }

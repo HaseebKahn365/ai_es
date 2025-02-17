@@ -151,7 +151,9 @@ class VoiceControlScreen extends StatelessWidget {
                       child: Dismissible(
                         key: Key(aiProvider.error), // Unique key for dismissible
                         direction: DismissDirection.up, // Swipe up to dismiss
-                        onDismissed: (direction) {},
+                        onDismissed: (direction) {
+                          aiProvider.clearState();
+                        },
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           constraints: const BoxConstraints(maxWidth: 300), // Limit width

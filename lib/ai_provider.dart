@@ -42,11 +42,11 @@ class AIAssistantProvider extends ChangeNotifier {
   String commandEndPoint = 'http://192.168.149.254:5000/command';
 
   Map<String, dynamic> deviceStates = {
-    'room 1 light': 'off',
+    'room 1 light': 'on',
     'room 2 light': {'state': 'off', 'intensity': 0},
     'room 3 light': {'state': 'off', 'intensity': 0},
     'room 4 light': 'off',
-    'kitchen light': 'off',
+    'kitchen light': 'on',
     'TV': 'off',
     'Refrigerator': 'off',
     'DC motor': 'off',
@@ -153,6 +153,7 @@ class AIAssistantProvider extends ChangeNotifier {
  */
 
   Future<void> sendVoiceCommand(String command) async {
+    if (command.isEmpty) return;
     try {
       log('Sending command: $command');
       isLoading = true;
